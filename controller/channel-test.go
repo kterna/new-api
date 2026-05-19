@@ -872,7 +872,14 @@ var testAllChannelsLock sync.Mutex
 var testAllChannelsRunning bool = false
 
 func testAllChannels(notify bool) error {
+	return testChannels(notify, false)
+}
 
+func testAutoDisabledChannels() error {
+	return testChannels(false, true)
+}
+
+func testChannels(notify bool, onlyAutoDisabled bool) error {
 	testAllChannelsLock.Lock()
 	if testAllChannelsRunning {
 		testAllChannelsLock.Unlock()
@@ -898,6 +905,9 @@ func testAllChannels(notify bool) error {
 
 		for _, channel := range channels {
 			if channel.Status == common.ChannelStatusManuallyDisabled {
+				continue
+			}
+			if onlyAutoDisabled && channel.Status != common.ChannelStatusAutoDisabled {
 				continue
 			}
 			isChannelEnabled := channel.Status == common.ChannelStatusEnabled
@@ -972,8 +982,8 @@ func AutomaticallyTestChannels() {
 				frequency := operation_setting.GetMonitorSetting().AutoTestChannelMinutes
 				time.Sleep(time.Duration(int(math.Round(frequency))) * time.Minute)
 				common.SysLog(fmt.Sprintf("automatically test channels with interval %f minutes", frequency))
-				common.SysLog("automatically testing all channels")
-				_ = testAllChannels(false)
+				common.SysLog("automatically testing auto-disabled channels")
+				_ = testAutoDisabledChannels()
 				common.SysLog("automatically channel test finished")
 				if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
 					break
