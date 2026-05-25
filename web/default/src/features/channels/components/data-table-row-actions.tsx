@@ -34,6 +34,7 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  BarChart3,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -88,6 +89,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const handleTest = () => {
     setCurrentRow(channel)
     setOpen('test-channel')
+  }
+
+  const handleUsage = () => {
+    setCurrentRow(channel)
+    setOpen('channel-usage')
   }
 
   const handleDirectTest = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -218,6 +224,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             {t('Test Connection')}
             <DropdownMenuShortcut>
               <TestTube size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          {/* Usage Statistics */}
+          <DropdownMenuItem onClick={handleUsage}>
+            {t('Usage Statistics')}
+            <DropdownMenuShortcut>
+              <BarChart3 size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
