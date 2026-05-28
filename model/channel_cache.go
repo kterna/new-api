@@ -115,6 +115,10 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	if len(channels) == 0 {
 		return nil, nil
 	}
+	channels = filterTemporarilyDisabledChannelIDs(channels)
+	if len(channels) == 0 {
+		return nil, nil
+	}
 
 	if len(channels) == 1 {
 		if channel, ok := channelsIDM[channels[0]]; ok {

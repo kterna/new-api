@@ -221,6 +221,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		if newAPIError == nil {
+			model.RecordChannelTemporarySuccess(channel.Id)
 			relayInfo.LastError = nil
 			return
 		}
@@ -228,9 +229,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
 		relayInfo.LastError = newAPIError
 
-		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		temporarilyDisabled := processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		remainingRetries := common.RetryTimes - retryParam.GetRetry()
+		if !shouldForceRetryAfterTemporaryDisable(c, temporarilyDisabled, remainingRetries) && !shouldRetry(c, newAPIError, remainingRetries) {
 			break
 		}
 	}
@@ -353,8 +355,25 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	return operation_setting.ShouldRetryByStatusCode(code)
 }
 
-func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
+func shouldForceRetryAfterTemporaryDisable(c *gin.Context, temporarilyDisabled bool, retryTimes int) bool {
+	if !temporarilyDisabled {
+		return false
+	}
+	if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
+		return false
+	}
+	if retryTimes <= 0 {
+		return false
+	}
+	if _, ok := c.Get("specific_channel_id"); ok {
+		return false
+	}
+	return true
+}
+
+func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) bool {
 	logger.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, err.Error()))
+	temporarilyDisabled := model.RecordChannelTemporaryFailure(channelError.ChannelId, err)
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
 	if service.ShouldDisableChannel(err) && channelError.AutoBan {
@@ -398,6 +417,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeSeconds, common.GetContextKeyBool(c, constant.ContextKeyIsStream), userGroup, other)
 	}
 
+	return temporarilyDisabled
 }
 
 func RelayMidjourney(c *gin.Context) {
@@ -548,17 +568,20 @@ func RelayTask(c *gin.Context) {
 
 		result, taskErr = relay.RelayTaskSubmit(c, relayInfo)
 		if taskErr == nil {
+			model.RecordChannelTemporarySuccess(channel.Id)
 			break
 		}
 
+		temporarilyDisabled := false
 		if !taskErr.LocalError {
-			processChannelError(c,
+			temporarilyDisabled = processChannelError(c,
 				*types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey,
 					common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()),
 				types.NewOpenAIError(taskErr.Error, types.ErrorCodeBadResponseStatusCode, taskErr.StatusCode))
 		}
 
-		if !shouldRetryTaskRelay(c, channel.Id, taskErr, common.RetryTimes-retryParam.GetRetry()) {
+		remainingRetries := common.RetryTimes - retryParam.GetRetry()
+		if !shouldForceRetryAfterTemporaryDisable(c, temporarilyDisabled, remainingRetries) && !shouldRetryTaskRelay(c, channel.Id, taskErr, remainingRetries) {
 			break
 		}
 	}

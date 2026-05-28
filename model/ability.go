@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -107,10 +108,7 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
-	channelQuery, err := getChannelQuery(group, model, retry)
-	if err != nil {
-		return nil, err
-	}
+	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true)
 	if common.UsingSQLite || common.UsingPostgreSQL {
 		err = channelQuery.Order("weight DESC").Find(&abilities).Error
 	} else {
@@ -119,16 +117,36 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 	if err != nil {
 		return nil, err
 	}
+	abilities = filterTemporarilyDisabledAbilities(abilities)
 	channel := Channel{}
 	if len(abilities) > 0 {
+		uniquePriorities := make(map[int64]bool)
+		for _, ability_ := range abilities {
+			uniquePriorities[abilityPriority(ability_)] = true
+		}
+		var sortedUniquePriorities []int
+		for priority := range uniquePriorities {
+			sortedUniquePriorities = append(sortedUniquePriorities, int(priority))
+		}
+		sort.Sort(sort.Reverse(sort.IntSlice(sortedUniquePriorities)))
+		if retry >= len(sortedUniquePriorities) {
+			retry = len(sortedUniquePriorities) - 1
+		}
+		targetPriority := int64(sortedUniquePriorities[retry])
+
 		// Randomly choose one
 		weightSum := uint(0)
 		for _, ability_ := range abilities {
-			weightSum += ability_.Weight + 10
+			if abilityPriority(ability_) == targetPriority {
+				weightSum += ability_.Weight + 10
+			}
 		}
 		// Randomly choose one
 		weight := common.GetRandomInt(int(weightSum))
 		for _, ability_ := range abilities {
+			if abilityPriority(ability_) != targetPriority {
+				continue
+			}
 			weight -= int(ability_.Weight) + 10
 			//log.Printf("weight: %d, ability weight: %d", weight, *ability_.Weight)
 			if weight <= 0 {
@@ -141,6 +159,13 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 	}
 	err = DB.First(&channel, "id = ?", channel.Id).Error
 	return &channel, err
+}
+
+func abilityPriority(ability Ability) int64 {
+	if ability.Priority == nil {
+		return 0
+	}
+	return *ability.Priority
 }
 
 func (channel *Channel) AddAbilities(tx *gorm.DB) error {
