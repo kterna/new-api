@@ -2,13 +2,16 @@ package model
 
 import (
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
 )
+
+const DefaultChannelFailureSwitchStatusCodes = "300-599"
 
 type channelTemporaryDisableState struct {
 	failureCount  int
@@ -83,7 +86,11 @@ func RecordChannelTemporarySuccess(channelID int) {
 }
 
 func RecordChannelTemporaryFailure(channelID int, err *types.NewAPIError) bool {
-	if channelID <= 0 || !shouldRecordChannelTemporaryFailure(err) {
+	return RecordChannelTemporaryFailureWithSetting(channelID, err, dto.ChannelSettings{})
+}
+
+func RecordChannelTemporaryFailureWithSetting(channelID int, err *types.NewAPIError, setting dto.ChannelSettings) bool {
+	if channelID <= 0 || !channelTemporaryDisableUsable() || !IsChannelTemporaryFailureWithSetting(err, setting) {
 		return false
 	}
 
@@ -147,11 +154,18 @@ func channelTemporaryDisableCooldown(disableCount int) time.Duration {
 	return cooldown
 }
 
-func shouldRecordChannelTemporaryFailure(err *types.NewAPIError) bool {
-	if err == nil || !channelTemporaryDisableUsable() {
+func IsChannelTemporaryFailure(err *types.NewAPIError) bool {
+	return IsChannelTemporaryFailureWithSetting(err, dto.ChannelSettings{})
+}
+
+func IsChannelTemporaryFailureWithSetting(err *types.NewAPIError, setting dto.ChannelSettings) bool {
+	if err == nil {
 		return false
 	}
 	if types.IsSkipRetryError(err) {
+		return false
+	}
+	if !ChannelFailureSwitchEnabled(setting) {
 		return false
 	}
 	if types.IsChannelError(err) {
@@ -161,7 +175,6 @@ func shouldRecordChannelTemporaryFailure(err *types.NewAPIError) bool {
 	switch err.GetErrorCode() {
 	case types.ErrorCodeDoRequestFailed,
 		types.ErrorCodeReadResponseBodyFailed,
-		types.ErrorCodeBadResponseStatusCode,
 		types.ErrorCodeBadResponse,
 		types.ErrorCodeBadResponseBody,
 		types.ErrorCodeEmptyResponse,
@@ -169,8 +182,36 @@ func shouldRecordChannelTemporaryFailure(err *types.NewAPIError) bool {
 		return true
 	}
 
-	if err.StatusCode >= http.StatusMultipleChoices && err.StatusCode <= 599 {
+	if ChannelFailureSwitchMatchesStatusCode(setting, err.StatusCode) {
 		return true
+	}
+	return false
+}
+
+func ChannelFailureSwitchEnabled(setting dto.ChannelSettings) bool {
+	return setting.UpstreamFailureSwitchEnabled == nil || *setting.UpstreamFailureSwitchEnabled
+}
+
+func ChannelFailureSwitchStatusCodes(setting dto.ChannelSettings) string {
+	if setting.UpstreamFailureSwitchStatusCodes == "" {
+		return DefaultChannelFailureSwitchStatusCodes
+	}
+	return setting.UpstreamFailureSwitchStatusCodes
+}
+
+func ChannelFailureSwitchMatchesStatusCode(setting dto.ChannelSettings, statusCode int) bool {
+	if statusCode < 100 || statusCode > 599 {
+		return false
+	}
+	statusCodes := ChannelFailureSwitchStatusCodes(setting)
+	ranges, err := operation_setting.ParseHTTPStatusCodeRanges(statusCodes)
+	if err != nil {
+		ranges, _ = operation_setting.ParseHTTPStatusCodeRanges(DefaultChannelFailureSwitchStatusCodes)
+	}
+	for _, r := range ranges {
+		if statusCode >= r.Start && statusCode <= r.End {
+			return true
+		}
 	}
 	return false
 }

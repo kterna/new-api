@@ -13,6 +13,7 @@ import (
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/samber/lo"
@@ -912,6 +913,11 @@ func (channel *Channel) ValidateSettings() error {
 		err := common.Unmarshal([]byte(*channel.Setting), channelParams)
 		if err != nil {
 			return err
+		}
+	}
+	if channelParams.UpstreamFailureSwitchStatusCodes != "" {
+		if _, err := operation_setting.ParseHTTPStatusCodeRanges(channelParams.UpstreamFailureSwitchStatusCodes); err != nil {
+			return fmt.Errorf("上游失败换渠道状态码规则无效：%w", err)
 		}
 	}
 	return nil

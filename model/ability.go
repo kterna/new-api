@@ -104,8 +104,9 @@ func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, retry int) (*Channel, error) {
+func GetChannel(group string, model string, retry int, excludedChannelIDs ...map[int]struct{}) (*Channel, error) {
 	var abilities []Ability
+	excludedIDs := channelSelectionExcludedIDs(excludedChannelIDs...)
 
 	var err error = nil
 	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true)
@@ -118,6 +119,7 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 		return nil, err
 	}
 	abilities = filterTemporarilyDisabledAbilities(abilities)
+	abilities = filterExcludedAbilities(abilities, excludedIDs)
 	channel := Channel{}
 	if len(abilities) > 0 {
 		uniquePriorities := make(map[int64]bool)

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/types"
 )
 
@@ -139,6 +141,74 @@ func TestUpstreamBadRequestCanOpenTemporaryDisable(t *testing.T) {
 	}
 	if !RecordChannelTemporaryFailure(7, upstreamBadRequest) {
 		t.Fatal("third upstream 400 should open temporary disable")
+	}
+}
+
+func TestChannelFailureSwitchCanBeDisabledByChannelSetting(t *testing.T) {
+	setupChannelTemporaryDisableTest(t)
+
+	enabled := false
+	setting := dto.ChannelSettings{
+		UpstreamFailureSwitchEnabled: &enabled,
+	}
+	if IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusBadGateway), setting) {
+		t.Fatal("disabled channel setting should not classify upstream failure as temporary failure")
+	}
+	for i := 0; i < 5; i++ {
+		if RecordChannelTemporaryFailureWithSetting(7, upstreamFailure(http.StatusBadGateway), setting) {
+			t.Fatal("disabled channel setting should not open temporary disable")
+		}
+	}
+}
+
+func TestChannelFailureSwitchStatusCodesCanBeConfigured(t *testing.T) {
+	setupChannelTemporaryDisableTest(t)
+
+	enabled := true
+	setting := dto.ChannelSettings{
+		UpstreamFailureSwitchEnabled:     &enabled,
+		UpstreamFailureSwitchStatusCodes: "429,500-503",
+	}
+	if IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusBadRequest), setting) {
+		t.Fatal("400 should not match custom upstream failure status codes")
+	}
+	if !IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusTooManyRequests), setting) {
+		t.Fatal("429 should match custom upstream failure status codes")
+	}
+	if !IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusBadGateway), setting) {
+		t.Fatal("502 should match custom upstream failure status codes")
+	}
+	if RecordChannelTemporaryFailureWithSetting(7, upstreamFailure(http.StatusBadRequest), setting) {
+		t.Fatal("400 should not be counted for temporary disable when excluded by setting")
+	}
+}
+
+func TestValidateChannelFailureSwitchStatusCodes(t *testing.T) {
+	enabled := true
+	validSetting := dto.ChannelSettings{
+		UpstreamFailureSwitchEnabled:     &enabled,
+		UpstreamFailureSwitchStatusCodes: "429,500-503",
+	}
+	validSettingJSON, err := common.Marshal(validSetting)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validChannel := &Channel{Setting: common.GetPointer(string(validSettingJSON))}
+	if err := validChannel.ValidateSettings(); err != nil {
+		t.Fatalf("valid status code ranges should pass validation: %v", err)
+	}
+
+	invalidSetting := dto.ChannelSettings{
+		UpstreamFailureSwitchEnabled:     &enabled,
+		UpstreamFailureSwitchStatusCodes: "429,abc",
+	}
+	invalidSettingJSON, err := common.Marshal(invalidSetting)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invalidChannel := &Channel{Setting: common.GetPointer(string(invalidSettingJSON))}
+	if err := invalidChannel.ValidateSettings(); err == nil {
+		t.Fatal("invalid status code ranges should fail validation")
 	}
 }
 

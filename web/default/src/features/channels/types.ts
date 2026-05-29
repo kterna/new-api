@@ -86,6 +86,8 @@ export interface ChannelSettings {
   pass_through_body_enabled?: boolean
   system_prompt?: string
   system_prompt_override?: boolean
+  upstream_failure_switch_enabled?: boolean
+  upstream_failure_switch_status_codes?: string
 }
 
 export interface ChannelOtherSettings {

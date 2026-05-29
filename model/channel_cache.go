@@ -94,11 +94,12 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, retry int, excludedChannelIDs ...map[int]struct{}) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry)
+		return GetChannel(group, model, retry, excludedChannelIDs...)
 	}
+	excludedIDs := channelSelectionExcludedIDs(excludedChannelIDs...)
 
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
@@ -116,6 +117,7 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 		return nil, nil
 	}
 	channels = filterTemporarilyDisabledChannelIDs(channels)
+	channels = filterExcludedChannelIDs(channels, excludedIDs)
 	if len(channels) == 0 {
 		return nil, nil
 	}
