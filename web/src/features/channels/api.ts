@@ -38,6 +38,7 @@ import type {
   SearchChannelsParams,
   SearchChannelsResponse,
   TagOperationParams,
+  TemporaryDisableStateInfo,
 } from './types'
 
 const channelActionConfig = (
@@ -631,6 +632,22 @@ export const getGroups = getUserGroups
 
 // ============================================================================
 // Prefill Groups (Model Groups)
+export async function getTemporaryDisableStates(): Promise<{
+  success: boolean
+  message?: string
+  data?: TemporaryDisableStateInfo[]
+}> {
+  const res = await api.get('/api/channel/temp-disable-status')
+  return res.data
+}
+
+export async function clearTemporaryDisableState(
+  channelId: number
+): Promise<{ success: boolean; message?: string }> {
+  const res = await api.post(`/api/channel/${channelId}/clear-temp-disable`)
+  return res.data
+}
+
 // ============================================================================
 
 /**

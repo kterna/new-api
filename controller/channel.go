@@ -416,6 +416,76 @@ func GetChannel(c *gin.Context) {
 	return
 }
 
+func GetChannelUsage(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	channel, err := model.GetChannelById(id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	now := time.Now()
+	if startTimestamp == 0 && endTimestamp == 0 {
+		startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		startTimestamp = startOfDay.Unix()
+	}
+	if endTimestamp == 0 {
+		endTimestamp = now.Unix()
+	}
+	if startTimestamp > endTimestamp {
+		common.ApiError(c, fmt.Errorf("start_timestamp must be less than or equal to end_timestamp"))
+		return
+	}
+
+	stat, err := model.GetChannelUsageStat(
+		id,
+		startTimestamp,
+		endTimestamp,
+		c.Query("model_name"),
+		c.Query("group"),
+	)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	common.ApiSuccess(c, gin.H{
+		"channel_id":        id,
+		"channel_name":      channel.Name,
+		"start_timestamp":   startTimestamp,
+		"end_timestamp":     endTimestamp,
+		"requests":          stat.Requests,
+		"quota":             stat.Quota,
+		"prompt_tokens":     stat.PromptTokens,
+		"completion_tokens": stat.CompletionTokens,
+		"tokens":            stat.Tokens,
+	})
+}
+
+func GetTemporaryDisableStatus(c *gin.Context) {
+	states := model.GetTemporaryDisableStates()
+	common.ApiSuccess(c, states)
+}
+
+func ClearTemporaryDisableStatus(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	model.ClearTemporaryDisableState(id)
+	common.ApiSuccess(c, gin.H{
+		"channel_id": id,
+		"message":    "temporary disable state cleared",
+	})
+}
+
 // GetChannelKey 获取渠道密钥（需要通过安全验证中间件）
 // 此函数依赖 SecureVerificationRequired 中间件，确保用户已通过安全验证
 func GetChannelKey(c *gin.Context) {

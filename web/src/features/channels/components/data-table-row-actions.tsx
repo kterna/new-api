@@ -33,9 +33,11 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  Zap,
 } from 'lucide-react'
 import { useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -70,6 +72,7 @@ import {
 } from '../lib'
 import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
 import type { Channel } from '../types'
+import { clearTemporaryDisableState } from '../api'
 import { ChannelRowActionsLayoutContext } from './channel-row-actions-context'
 import { useChannels } from './channels-provider'
 
@@ -104,6 +107,20 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const handleTest = () => {
     setCurrentRow(channel)
     setOpen('test-channel')
+  }
+
+  const handleClearCircuitBreaker = async () => {
+    try {
+      const res = await clearTemporaryDisableState(channel.id)
+      if (res.success) {
+        toast.success(t('Circuit breaker cleared'))
+        queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
+      } else {
+        toast.error(res.message || t('Failed to clear circuit breaker'))
+      }
+    } catch {
+      toast.error(t('Failed to clear circuit breaker'))
+    }
   }
 
   const handleDirectTest = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -278,6 +295,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             {t('Test Connection')}
             <DropdownMenuShortcut>
               <PlugZap size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          {/* Clear Circuit Breaker */}
+          <DropdownMenuItem onClick={handleClearCircuitBreaker}>
+            {t('Clear Circuit Breaker')}
+            <DropdownMenuShortcut>
+              <Zap size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 

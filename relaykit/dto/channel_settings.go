@@ -17,6 +17,10 @@ type ChannelSettings struct {
 	PassThroughBodyEnabled bool   `json:"pass_through_body_enabled,omitempty"`
 	SystemPrompt           string `json:"system_prompt,omitempty"`
 	SystemPromptOverride   bool   `json:"system_prompt_override,omitempty"`
+	// UpstreamFailureSwitchEnabled controls the per-channel circuit breaker
+	// (temporary disable on repeated upstream failures). nil means enabled.
+	UpstreamFailureSwitchEnabled     *bool  `json:"upstream_failure_switch_enabled,omitempty"`
+	UpstreamFailureSwitchStatusCodes string `json:"upstream_failure_switch_status_codes,omitempty"`
 	// HTTPProtocol controls outbound HTTP version negotiation for this channel.
 	// Accepted values: "", "auto" (default), "http1".
 	HTTPProtocol string `json:"http_protocol,omitempty"`

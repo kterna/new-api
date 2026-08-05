@@ -341,6 +341,9 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.thinking_to_content ||
     values.pass_through_body_enabled ||
     values.system_prompt_override ||
+    values.upstream_failure_switch_enabled === false ||
+    (values.upstream_failure_switch_status_codes?.trim() &&
+      values.upstream_failure_switch_status_codes.trim() !== '300-599') ||
     (values.http_protocol && values.http_protocol !== 'auto') ||
     (values.http2_connection_shards != null &&
       values.http2_connection_shards > 1) ||
@@ -4140,6 +4143,52 @@ export function ChannelMutateDrawer({
                                         onCheckedChange={field.onChange}
                                       />
                                     </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name='upstream_failure_switch_enabled'
+                                render={({ field }) => (
+                                  <FormItem className='flex items-center justify-between px-4 py-3'>
+                                    <div className='space-y-0.5'>
+                                      <FormLabel>
+                                        {t('Switch Channel on Upstream Failure')}
+                                      </FormLabel>
+                                      <FormDescription>
+                                        {t(
+                                          'When this channel returns configured upstream failure statuses, retry the current request on another channel and count it for temporary cooldown'
+                                        )}
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value !== false}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name='upstream_failure_switch_status_codes'
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      {t('Upstream Failure Status Codes')}
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input placeholder='300-599' {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      {t(
+                                        'HTTP status codes that trigger channel switching, supports comma-separated ranges like 429,500-599'
+                                      )}
+                                    </FormDescription>
+                                    <FormMessage />
                                   </FormItem>
                                 )}
                               />

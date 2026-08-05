@@ -105,7 +105,7 @@ func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, retry int, requestPath string) (*Channel, error) {
+func GetChannel(group string, model string, retry int, requestPath string, excludedChannelIDs ...map[int]struct{}) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -122,6 +122,8 @@ func GetChannel(group string, model string, retry int, requestPath string) (*Cha
 		return nil, err
 	}
 	abilities = filterAbilitiesByRequestPathAndModel(abilities, requestPath, model)
+	abilities = filterTemporarilyDisabledAbilities(abilities)
+	abilities = filterExcludedAbilities(abilities, channelSelectionExcludedIDs(excludedChannelIDs...))
 	channel := Channel{}
 	if len(abilities) > 0 {
 		// Randomly choose one

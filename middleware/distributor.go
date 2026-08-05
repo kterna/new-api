@@ -106,6 +106,7 @@ func Distribute() func(c *gin.Context) {
 					affinityUsable := false
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled &&
+						!model.IsChannelTemporarilyDisabled(preferred.Id) &&
 						channelSupportsRequestPath(preferred, c.Request.URL.Path, modelRequest.Model) {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)

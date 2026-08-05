@@ -26,6 +26,7 @@ import {
   ListOrdered,
   Shuffle,
   SlidersHorizontal,
+  Zap,
 } from 'lucide-react'
 import { useState, useMemo, useContext, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -55,7 +56,7 @@ import {
 import { formatTimestampToDate } from '@/lib/format'
 import { truncateText } from '@/lib/utils'
 
-import { getCodexUsage } from '../api'
+import { getCodexUsage, getTemporaryDisableStates } from '../api'
 import { CHANNEL_STATUS_CONFIG, MODEL_FETCHABLE_TYPES } from '../constants'
 import {
   formatRelativeTime,
@@ -76,7 +77,7 @@ import {
   type TagRow,
 } from '../lib'
 import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
-import type { Channel } from '../types'
+import type { Channel, TemporaryDisableStateInfo } from '../types'
 import { ChannelRowActionsLayoutContext } from './channel-row-actions-context'
 import { useChannels } from './channels-provider'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -552,6 +553,35 @@ export function useChannelsColumns(
   const { sensitiveVisible } = useChannels()
   const enableSelection = options.enableSelection ?? true
   const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
+
+  // Fetch temporary disable (circuit breaker) states on mount and refresh periodically
+  const [tempDisableStates, setTempDisableStates] = useState<
+    Map<number, TemporaryDisableStateInfo>
+  >(new Map())
+  useEffect(() => {
+    let cancelled = false
+    const fetch = async () => {
+      try {
+        const res = await getTemporaryDisableStates()
+        if (!cancelled && res.success && res.data) {
+          const map = new Map<number, TemporaryDisableStateInfo>()
+          for (const state of res.data) {
+            map.set(state.channel_id, state)
+          }
+          setTempDisableStates(map)
+        }
+      } catch {
+        // ignore network / auth errors; keep last known state
+      }
+    }
+    fetch()
+    const interval = setInterval(fetch, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
   // The column definitions only depend on the translation function, the active
   // locale, and sensitive-data visibility. Memoizing keeps the array (and every
   // cell renderer reference) stable across unrelated re-renders, so react-table
@@ -960,13 +990,61 @@ export function useChannelsColumns(
             }
           }
 
+          const tempState = tempDisableStates.get(channel.id)
+          const isTempDisabled = tempState?.disabled
+
           return (
-            <StatusBadge
-              label={label}
-              variant={config.variant}
-              size='sm'
-              copyable={false}
-            />
+            <div className='flex items-center gap-1.5'>
+              <StatusBadge
+                label={label}
+                variant={config.variant}
+                size='sm'
+                copyable={false}
+              />
+              {isTempDisabled && (
+                <TooltipProvider delay={100}>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <span className='inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'>
+                          <Zap className='h-3 w-3' />
+                          {t('Circuit Breaker')}
+                        </span>
+                      }
+                    />
+                    <TooltipContent side='top' className='max-w-xs'>
+                      <div className='space-y-1 text-xs'>
+                        <div className='font-medium'>
+                          {t('Temporarily Disabled')}
+                        </div>
+                        {tempState && (
+                          <>
+                            <div>
+                              {t('Remaining')}:{' '}
+                              {tempState.disabled_until > 0
+                                ? Math.max(
+                                    0,
+                                    Math.ceil(
+                                      tempState.disabled_until -
+                                        Date.now() / 1000
+                                    )
+                                  ) + 's'
+                                : '-'}
+                            </div>
+                            <div>
+                              {t('Failure Count')}: {tempState.failure_count}
+                            </div>
+                            <div>
+                              {t('Disable Count')}: {tempState.disable_count}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           )
         },
         filterFn: (row, id, value) => {

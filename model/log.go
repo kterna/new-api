@@ -615,6 +615,40 @@ type Stat struct {
 	Tpm   int `json:"tpm"`
 }
 
+type ChannelUsageStat struct {
+	Requests         int64 `json:"requests"`
+	Quota            int64 `json:"quota"`
+	PromptTokens     int64 `json:"prompt_tokens"`
+	CompletionTokens int64 `json:"completion_tokens"`
+	Tokens           int64 `json:"tokens"`
+}
+
+func GetChannelUsageStat(channelId int, startTimestamp int64, endTimestamp int64, modelName string, group string) (stat ChannelUsageStat, err error) {
+	tx := LOG_DB.Table("logs").Select(`
+		count(*) as requests,
+		coalesce(sum(quota), 0) as quota,
+		coalesce(sum(prompt_tokens), 0) as prompt_tokens,
+		coalesce(sum(completion_tokens), 0) as completion_tokens,
+		coalesce(sum(prompt_tokens), 0) + coalesce(sum(completion_tokens), 0) as tokens
+	`)
+	tx = tx.Where("type = ?", LogTypeConsume)
+	tx = tx.Where("channel_id = ?", channelId)
+	if startTimestamp != 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp != 0 {
+		tx = tx.Where("created_at <= ?", endTimestamp)
+	}
+	if tx, err = applyExplicitLogTextFilter(tx, "model_name", modelName); err != nil {
+		return stat, err
+	}
+	if group != "" {
+		tx = tx.Where(logGroupCol+" = ?", group)
+	}
+	err = tx.Scan(&stat).Error
+	return stat, err
+}
+
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
 	tx := LOG_DB.Table("logs").Select("COALESCE(sum(quota), 0) quota")
 
