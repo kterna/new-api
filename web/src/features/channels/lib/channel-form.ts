@@ -619,6 +619,8 @@ export function buildSettingJSON(formData: ChannelFormValues): string {
     pass_through_body_enabled: formData.pass_through_body_enabled || false,
     system_prompt: formData.system_prompt || '',
     system_prompt_override: formData.system_prompt_override || false,
+    upstream_failure_switch_enabled: formData.upstream_failure_switch_enabled !== false,
+    upstream_failure_switch_status_codes: formData.upstream_failure_switch_status_codes?.trim() || '300-599',
   }
 
   const protocol = normalizeHttpProtocol(formData.http_protocol)
