@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 /* eslint-disable react-refresh/only-export-components */
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   AlertTriangle,
@@ -554,33 +554,22 @@ export function useChannelsColumns(
   const enableSelection = options.enableSelection ?? true
   const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
 
-  // Fetch temporary disable (circuit breaker) states on mount and refresh periodically
-  const [tempDisableStates, setTempDisableStates] = useState<
-    Map<number, TemporaryDisableStateInfo>
-  >(new Map())
-  useEffect(() => {
-    let cancelled = false
-    const fetch = async () => {
-      try {
-        const res = await getTemporaryDisableStates()
-        if (!cancelled && res.success && res.data) {
-          const map = new Map<number, TemporaryDisableStateInfo>()
-          for (const state of res.data) {
-            map.set(state.channel_id, state)
-          }
-          setTempDisableStates(map)
+  // Fetch temporary disable (circuit breaker) states via react-query so other
+  // actions (e.g. clearing a breaker) can invalidate and immediately refresh.
+  const { data: tempDisableStates } = useQuery({
+    queryKey: channelsQueryKeys.tempDisable(),
+    queryFn: async () => {
+      const res = await getTemporaryDisableStates()
+      const map = new Map<number, TemporaryDisableStateInfo>()
+      if (res.success && res.data) {
+        for (const state of res.data) {
+          map.set(state.channel_id, state)
         }
-      } catch {
-        // ignore network / auth errors; keep last known state
       }
-    }
-    fetch()
-    const interval = setInterval(fetch, 30000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
+      return map
+    },
+    refetchInterval: 30000,
+  })
 
   // The column definitions only depend on the translation function, the active
   // locale, and sensitive-data visibility. Memoizing keeps the array (and every
@@ -990,7 +979,7 @@ export function useChannelsColumns(
             }
           }
 
-          const tempState = tempDisableStates.get(channel.id)
+          const tempState = tempDisableStates?.get(channel.id)
           const isTempDisabled = tempState?.disabled
 
           return (

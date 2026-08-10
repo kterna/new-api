@@ -115,6 +115,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       if (res.success) {
         toast.success(t('Circuit breaker cleared'))
         queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
+        queryClient.invalidateQueries({
+          queryKey: channelsQueryKeys.tempDisable(),
+        })
       } else {
         toast.error(res.message || t('Failed to clear circuit breaker'))
       }
