@@ -34,6 +34,7 @@ import {
   RefreshCw,
   Loader2,
   Zap,
+  BarChart3,
 } from 'lucide-react'
 import { useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -124,6 +125,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     } catch {
       toast.error(t('Failed to clear circuit breaker'))
     }
+  }
+
+  const handleUsage = () => {
+    setCurrentRow(channel)
+    setOpen('channel-usage')
   }
 
   const handleDirectTest = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -306,6 +312,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             {t('Clear Circuit Breaker')}
             <DropdownMenuShortcut>
               <Zap size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          {/* Usage Statistics */}
+          <DropdownMenuItem onClick={handleUsage}>
+            {t('Usage Statistics')}
+            <DropdownMenuShortcut>
+              <BarChart3 size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 

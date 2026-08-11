@@ -26,6 +26,7 @@ import { MultiKeyManageDialog } from './dialogs/multi-key-manage-dialog'
 import { OllamaModelsDialog } from './dialogs/ollama-models-dialog'
 import { TagBatchEditDialog } from './dialogs/tag-batch-edit-dialog'
 import { UpstreamUpdateDialog } from './dialogs/upstream-update-dialog'
+import { ChannelUsageDialog } from './dialogs/channel-usage-dialog'
 import { ChannelMutateDrawer } from './drawers/channel-mutate-drawer'
 
 export function ChannelsDialogs() {
@@ -43,6 +44,12 @@ export function ChannelsDialogs() {
       {/* Test Channel Dialog */}
       <ChannelTestDialog
         open={open === 'test-channel'}
+        onOpenChange={(v) => !v && setOpen(null)}
+      />
+
+      {/* Channel Usage Dialog */}
+      <ChannelUsageDialog
+        open={open === 'channel-usage'}
         onOpenChange={(v) => !v && setOpen(null)}
       />
 

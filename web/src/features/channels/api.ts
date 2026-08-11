@@ -648,6 +648,37 @@ export async function clearTemporaryDisableState(
   return res.data
 }
 
+export type ChannelUsageStats = {
+  channel_id: number
+  channel_name: string
+  start_timestamp: number
+  end_timestamp: number
+  requests: number
+  quota: number
+  prompt_tokens: number
+  completion_tokens: number
+  tokens: number
+}
+
+export type ChannelUsageStatsResponse = {
+  success: boolean
+  message?: string
+  data?: ChannelUsageStats
+}
+
+export async function getChannelUsageStats(
+  id: number,
+  params: {
+    start_timestamp?: number
+    end_timestamp?: number
+    model_name?: string
+    group?: string
+  }
+): Promise<ChannelUsageStatsResponse> {
+  const res = await api.get(`/api/channel/${id}/usage`, { params })
+  return res.data
+}
+
 // ============================================================================
 
 /**
