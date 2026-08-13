@@ -7,8 +7,8 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/relaykit/dto"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/relaykit/types"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 )
 
 const DefaultChannelFailureSwitchStatusCodes = "300-599"
@@ -258,9 +258,12 @@ func GetTemporaryDisableStates() []TemporaryDisableStateInfo {
 // ClearTemporaryDisableState removes the temporary disable state for a channel.
 func ClearTemporaryDisableState(channelID int) {
 	channelTemporaryDisableLock.Lock()
-	defer channelTemporaryDisableLock.Unlock()
+	_, existed := channelTemporaryDisableStates[channelID]
 	delete(channelTemporaryDisableStates, channelID)
-	common.SysLog(fmt.Sprintf("channel #%d temporary disable state manually cleared", channelID))
+	channelTemporaryDisableLock.Unlock()
+	if existed {
+		common.SysLog(fmt.Sprintf("channel #%d temporary disable state manually cleared", channelID))
+	}
 }
 
 func filterTemporarilyDisabledChannelIDs(channelIDs []int) []int {

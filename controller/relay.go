@@ -311,12 +311,16 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 		if !autoBan {
 			autoBanInt = 0
 		}
-		return &model.Channel{
+		channel := &model.Channel{
 			Id:      c.GetInt("channel_id"),
 			Type:    c.GetInt("channel_type"),
 			Name:    c.GetString("channel_name"),
 			AutoBan: &autoBanInt,
-		}, nil
+		}
+		if channelSetting, ok := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting); ok {
+			channel.SetSetting(channelSetting)
+		}
+		return channel, nil
 	}
 	channel, selectGroup, err := service.CacheGetRandomSatisfiedChannel(retryParam)
 	if err != nil {
@@ -365,10 +369,6 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return false
 	}
 	return operation_setting.ShouldRetryByStatusCode(code)
-}
-
-func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) bool {
-	return processChannelErrorWithSetting(c, channelError, err, dto.ChannelSettings{})
 }
 
 func processChannelErrorWithSetting(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError, setting dto.ChannelSettings) bool {

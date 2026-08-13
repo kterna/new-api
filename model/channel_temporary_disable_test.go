@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/QuantumNous/new-api/relaykit/dto"
+	"github.com/QuantumNous/new-api/relaykit/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupChannelTemporaryDisableTest(t *testing.T) *time.Time {
@@ -151,14 +153,25 @@ func TestChannelFailureSwitchCanBeDisabledByChannelSetting(t *testing.T) {
 	setting := dto.ChannelSettings{
 		UpstreamFailureSwitchEnabled: &enabled,
 	}
-	if IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusBadGateway), setting) {
-		t.Fatal("disabled channel setting should not classify upstream failure as temporary failure")
-	}
+	assert.False(t, IsChannelTemporaryFailureWithSetting(upstreamFailure(http.StatusBadGateway), setting))
 	for i := 0; i < 5; i++ {
-		if RecordChannelTemporaryFailureWithSetting(7, upstreamFailure(http.StatusBadGateway), setting) {
-			t.Fatal("disabled channel setting should not open temporary disable")
-		}
+		assert.False(t, RecordChannelTemporaryFailureWithSetting(7, upstreamFailure(http.StatusBadGateway), setting))
 	}
+	assert.False(t, IsChannelTemporarilyDisabled(7))
+}
+
+func TestClearTemporaryDisableStateRemovesOpenBreaker(t *testing.T) {
+	setupChannelTemporaryDisableTest(t)
+
+	for i := 0; i < channelTemporaryDisableConfig.FailureThreshold; i++ {
+		RecordChannelTemporaryFailure(7, upstreamFailure(http.StatusBadGateway))
+	}
+	require.True(t, IsChannelTemporarilyDisabled(7))
+
+	ClearTemporaryDisableState(7)
+
+	assert.False(t, IsChannelTemporarilyDisabled(7))
+	assert.Empty(t, GetTemporaryDisableStates())
 }
 
 func TestChannelFailureSwitchStatusCodesCanBeConfigured(t *testing.T) {

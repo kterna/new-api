@@ -21,6 +21,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetChannelInitialAttemptPreservesFailureSwitchSetting(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	enabled := false
+	common.SetContextKey(ctx, constant.ContextKeyChannelId, 7)
+	common.SetContextKey(ctx, constant.ContextKeyChannelName, "cpa")
+	common.SetContextKey(ctx, constant.ContextKeyChannelType, constant.ChannelTypeOpenAI)
+	common.SetContextKey(ctx, constant.ContextKeyChannelSetting, dto.ChannelSettings{
+		UpstreamFailureSwitchEnabled: &enabled,
+	})
+
+	channel, err := getChannel(ctx, &relaycommon.RelayInfo{}, &service.RetryParam{})
+
+	require.Nil(t, err)
+	require.NotNil(t, channel)
+	assert.False(t, model.ChannelFailureSwitchEnabled(channel.GetSetting()))
+}
+
 func TestValidateChannelProxy(t *testing.T) {
 	tests := []struct {
 		name    string

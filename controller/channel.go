@@ -1159,6 +1159,9 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	if !model.ChannelFailureSwitchEnabled(channel.GetSetting()) {
+		model.ClearTemporaryDisableState(channel.Id)
+	}
 	if proxyChanged {
 		service.InvalidateProxyClient(originProxy)
 	}
