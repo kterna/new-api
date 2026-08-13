@@ -60,6 +60,11 @@ compose() {
   docker compose -f "$BASE_COMPOSE" -f "$OVERRIDE_COMPOSE" "$@"
 }
 
+replace_container() {
+  docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  compose up -d --no-deps --force-recreate --no-build new-api
+}
+
 is_healthy() {
   curl -fsS --max-time 5 "$HEALTH_URL" | jq -e '.success == true' >/dev/null
 }
@@ -111,12 +116,11 @@ worker() {
   echo "[$(date -Is)] image pulled; waiting ${DRAIN_SECONDS}s before recreate"
   sleep "$DRAIN_SECONDS"
 
-  write_status "$run_id" "recreating" "$image" "$previous_image" "recreating new-api container"
-  if ! compose up -d --no-deps --force-recreate --no-build new-api; then
+  write_status "$run_id" "recreating" "$image" "$previous_image" "replacing new-api container"
+  if ! replace_container; then
     echo "[$(date -Is)] recreate command failed; rolling back"
     write_override "$previous_image"
-    compose up -d --no-deps --force-recreate --no-build new-api || true
-    if wait_healthy; then
+    if replace_container && wait_healthy; then
       write_status "$run_id" "rolled_back" "$image" "$previous_image" "recreate failed; previous image restored and healthy"
     else
       write_status "$run_id" "rollback_failed" "$image" "$previous_image" "recreate failed and previous image did not recover health"
@@ -137,9 +141,8 @@ worker() {
   write_status "$run_id" "rolling_back" "$image" "$previous_image" "new image failed health check; restoring previous image"
   docker logs --tail 200 "$CONTAINER_NAME" || true
   write_override "$previous_image"
-  compose up -d --no-deps --force-recreate --no-build new-api || true
 
-  if wait_healthy; then
+  if replace_container && wait_healthy; then
     write_status "$run_id" "rolled_back" "$image" "$previous_image" "new image failed health check; previous image restored and healthy"
     echo "[$(date -Is)] rollback succeeded"
   else
