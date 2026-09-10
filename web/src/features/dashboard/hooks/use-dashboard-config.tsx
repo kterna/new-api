@@ -22,6 +22,7 @@ import {
   Layers,
   Gauge,
   Zap,
+  DatabaseZap,
   Flame,
   TrendingUp,
   Activity,
@@ -38,6 +39,8 @@ interface StatCardConfig {
   description: string
   icon: LucideIcon
   iconTone: IconBadgeTone
+  /** percent 时把 getValue 返回的 0-1 小数渲染为百分比 */
+  format?: 'percent'
   getValue: (stat: Record<string, number>, days?: number) => number
 }
 
@@ -86,6 +89,15 @@ export function useModelStatCardsConfig(): StatCardConfig[] {
       iconTone: 'warning',
       getValue: (stat, timeRangeMinutes = 1) =>
         safeDivide(stat?.tpm ?? 0, timeRangeMinutes),
+    },
+    {
+      key: 'cacheHitRate',
+      title: t('Cache Hit Rate'),
+      description: t('Cached tokens / input tokens'),
+      icon: DatabaseZap,
+      iconTone: 'chart-1',
+      format: 'percent',
+      getValue: (stat) => stat?.cacheHitRate ?? 0,
     },
   ]
 }

@@ -207,6 +207,18 @@ export function processChartData(
           text: tt('Call Count Ranking'),
         },
       },
+      spec_cache_hit: {
+        type: 'bar',
+        data: [{ id: 'cacheHitData', values: [] }],
+        xField: 'Model',
+        yField: 'HitRate',
+        seriesField: 'Model',
+        legends: { visible: false },
+        title: {
+          visible: true,
+          text: tt('Cache Hit Rate'),
+        },
+      },
       totalQuotaDisplay: formatQuotaTotal(0),
       totalCountDisplay: formatInt(0),
     }
@@ -222,7 +234,13 @@ export function processChartData(
   >()
   const modelTotalsMap = new Map<
     string,
-    { quota: number; count: number; tokens: number }
+    {
+      quota: number
+      count: number
+      tokens: number
+      promptTokens: number
+      cachedTokens: number
+    }
   >()
 
   data.forEach((item) => {
@@ -232,6 +250,8 @@ export function processChartData(
     const quota = Number(item.quota) || 0
     const count = Number(item.count) || 0
     const tokens = Number(item.token_used) || 0
+    const promptTokens = Number(item.prompt_tokens) || 0
+    const cachedTokens = Number(item.cached_tokens) || 0
 
     // Aggregate by time and model
     if (!timeModelMap.has(timeKey)) {
@@ -250,11 +270,15 @@ export function processChartData(
       quota: 0,
       count: 0,
       tokens: 0,
+      promptTokens: 0,
+      cachedTokens: 0,
     }
     modelTotalsMap.set(model, {
       quota: totalExisting.quota + quota,
       count: totalExisting.count + count,
       tokens: totalExisting.tokens + tokens,
+      promptTokens: totalExisting.promptTokens + promptTokens,
+      cachedTokens: totalExisting.cachedTokens + cachedTokens,
     })
   })
 
@@ -449,6 +473,21 @@ export function processChartData(
   } else {
     rankValues = allRankValues
   }
+
+  // Cache hit rate per model: cached tokens / input tokens (incl. cache).
+  // Models without input data are omitted since the rate is undefined.
+  const MAX_CACHE_HIT_MODELS = 20
+  const cacheHitValues = [...modelTotalsMap.entries()]
+    .filter(([, stats]) => (Number(stats.promptTokens) || 0) > 0)
+    .map(([model, stats]) => ({
+      Model: model,
+      HitRate: Number(stats.cachedTokens) / Number(stats.promptTokens),
+      Cached: Number(stats.cachedTokens) || 0,
+    }))
+    .sort((a, b) => b.HitRate - a.HitRate)
+    .slice(0, MAX_CACHE_HIT_MODELS)
+  const formatPercent = (value: number) =>
+    `${(value * 100).toFixed(1)}%`
 
   return {
     spec_pie: {
@@ -676,6 +715,54 @@ export function processChartData(
               key: (datum: Record<string, unknown>) => datum?.Model,
               value: (datum: Record<string, unknown>) =>
                 formatInt(Number(datum?.Count) || 0),
+            },
+          ],
+        },
+      },
+      background: { fill: 'transparent' },
+      animation: true,
+    },
+    spec_cache_hit: {
+      type: 'bar',
+      data: [{ id: 'cacheHitData', values: cacheHitValues }],
+      xField: 'Model',
+      yField: 'HitRate',
+      seriesField: 'Model',
+      legends: { visible: false },
+      color: modelColor,
+      title: {
+        visible: true,
+        text: tt('Cache Hit Rate'),
+      },
+      bar: {
+        state: {
+          hover: { stroke: '#000', lineWidth: 1 },
+        },
+      },
+      label: {
+        visible: true,
+        position: 'top',
+        formatMethod: (value: number) => formatPercent(Number(value) || 0),
+        style: { fontSize: 11 },
+      },
+      axes: [
+        { orient: 'bottom', type: 'band' },
+        {
+          orient: 'left',
+          type: 'linear',
+          min: 0,
+          label: {
+            formatMethod: (value: number) => formatPercent(Number(value) || 0),
+          },
+        },
+      ],
+      tooltip: {
+        mark: {
+          content: [
+            {
+              key: (datum: Record<string, unknown>) => datum?.Model,
+              value: (datum: Record<string, unknown>) =>
+                formatPercent(Number(datum?.HitRate) || 0),
             },
           ],
         },

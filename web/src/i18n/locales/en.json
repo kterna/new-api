@@ -2039,7 +2039,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "Related Projects",
     "footer.defaultCopyright": "All rights reserved.",
-    "footer.new\u0061pi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
+    "footer.newapi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
     "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment": "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment",
     "For private deployments, format: https://fastgpt.run/api/openapi": "For private deployments, format: https://fastgpt.run/api/openapi",
     "Force a syntactically valid JSON response": "Force a syntactically valid JSON response",
@@ -5252,7 +5252,6 @@
     "Disable Count": "Disable Count",
     "Failed to clear circuit breaker": "Failed to clear circuit breaker",
     "Failure Count": "Failure Count",
-    "Remaining": "Remaining",
     "Switch Channel on Upstream Failure": "Switch Channel on Upstream Failure",
     "Temporarily Disabled": "Temporarily Disabled",
     "Upstream Failure Status Codes": "Upstream Failure Status Codes",
@@ -5268,6 +5267,8 @@
     "Usage Statistics": "Usage Statistics",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Cache Hit Rate": "Cache Hit Rate",
+    "Cached tokens / input tokens": "Cached tokens / input tokens"
   }
 }

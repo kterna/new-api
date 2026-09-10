@@ -2039,7 +2039,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "相关项目",
     "footer.defaultCopyright": "版权所有。",
-    "footer.new\u0061pi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
+    "footer.newapi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
     "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment": "对于 2025 年 5 月 10 日之后添加的渠道，在部署时无需从模型名称中移除 \".\"",
     "For private deployments, format: https://fastgpt.run/api/openapi": "对于私有部署，格式为：https://fastgpt.run/api/openapi",
     "Force a syntactically valid JSON response": "强制返回语法合法的 JSON",
@@ -5252,7 +5252,6 @@
     "Disable Count": "熔断次数",
     "Failed to clear circuit breaker": "清除熔断失败",
     "Failure Count": "失败次数",
-    "Remaining": "剩余",
     "Switch Channel on Upstream Failure": "上游失败时切换渠道",
     "Temporarily Disabled": "熔断中",
     "Upstream Failure Status Codes": "上游失败状态码",
@@ -5268,6 +5267,8 @@
     "Usage Statistics": "使用统计",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "Cache Hit Rate": "缓存命中率",
+    "Cached tokens / input tokens": "缓存 token ÷ 输入 token"
   }
 }
