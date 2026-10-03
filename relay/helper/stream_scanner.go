@@ -251,6 +251,9 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			data := scanner.Text()
 			logger.LogDebug(c, "stream scanner data: %s", data)
 
+			if service.CaptureCPAModelIdentityComment(c, data) {
+				continue
+			}
 			if len(data) < 6 {
 				continue
 			}

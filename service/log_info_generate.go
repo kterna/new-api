@@ -95,6 +95,17 @@ func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, m
 
 	adminInfo := make(map[string]interface{})
 	adminInfo["use_channel"] = ctx.GetStringSlice("use_channel")
+	if identity, ok := cpaModelIdentity(ctx); ok {
+		adminInfo["cpa_model_identity"] = map[string]interface{}{
+			"newapi_requested_model":  relayInfo.OriginModelName,
+			"cpa_requested_model":     identity.RequestedModel,
+			"cpa_routed_model":        identity.RoutedModel,
+			"upstream_reported_model": identity.ReportedModel,
+			"comparison":              identity.Comparison,
+			"source":                  identity.Source,
+			"response_id":             identity.ResponseID,
+		}
+	}
 	isMultiKey := common.GetContextKeyBool(ctx, constant.ContextKeyChannelIsMultiKey)
 	if isMultiKey {
 		adminInfo["is_multi_key"] = true
