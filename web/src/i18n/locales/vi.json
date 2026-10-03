@@ -5248,6 +5248,14 @@
     "Zero retention": "Không lưu dữ liệu",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "CPA Model Observation": "Quan sát mô hình CPA",
+    "CPA Routed Model": "Mô hình CPA định tuyến",
+    "Upstream Reported Model": "Mô hình do nguồn trên báo cáo",
+    "Comparison": "So sánh",
+    "Reported model differs": "Mô hình báo cáo khác",
+    "Reported model matches": "Mô hình báo cáo khớp",
+    "Upstream model IDs may be aliases; check routing before treating a difference as fallback.": "ID mô hình từ nguồn trên có thể là bí danh; hãy kiểm tra định tuyến trước khi coi khác biệt là chuyển sang mô hình dự phòng.",
+    "The reported model in this row is a temporary demo value.": "Mô hình được báo cáo trong dòng này là giá trị minh họa tạm thời."
   }
 }

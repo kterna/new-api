@@ -5248,6 +5248,14 @@
     "Zero retention": "Aucune rétention",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "CPA Model Observation": "Observation du modèle CPA",
+    "CPA Routed Model": "Modèle routé par CPA",
+    "Upstream Reported Model": "Modèle indiqué par le service amont",
+    "Comparison": "Comparaison",
+    "Reported model differs": "Le modèle indiqué diffère",
+    "Reported model matches": "Le modèle indiqué correspond",
+    "Upstream model IDs may be aliases; check routing before treating a difference as fallback.": "Les identifiants de modèle peuvent être des alias ; vérifiez le routage avant de conclure à un repli.",
+    "The reported model in this row is a temporary demo value.": "Le modèle indiqué sur cette ligne est une valeur de démonstration temporaire."
   }
 }

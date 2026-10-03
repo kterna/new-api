@@ -5248,6 +5248,14 @@
     "Zero retention": "Без хранения данных",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "CPA Model Observation": "Наблюдение модели CPA",
+    "CPA Routed Model": "Модель маршрутизации CPA",
+    "Upstream Reported Model": "Модель, указанная вышестоящим сервисом",
+    "Comparison": "Сравнение",
+    "Reported model differs": "Указанная модель отличается",
+    "Reported model matches": "Указанная модель совпадает",
+    "Upstream model IDs may be aliases; check routing before treating a difference as fallback.": "Идентификаторы моделей могут быть псевдонимами; проверьте маршрутизацию, прежде чем считать различие резервной заменой.",
+    "The reported model in this row is a temporary demo value.": "Указанная модель в этой строке — временное демонстрационное значение."
   }
 }
