@@ -16,12 +16,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStreamScannerCapturesIdentityCommentWithoutForwardingIt(t *testing.T) {
+func TestStreamScannerCapturesIdentityFieldWithoutForwardingIt(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	report := `{"requested_model":"gemini-pro-agent","reported_model":"gemini-3.1-pro-high","source":"response.modelVersion"}`
-	comment := ": cpa-model-identity " + base64.RawURLEncoding.EncodeToString([]byte(report)) + "\n\n"
-	body := comment + "data: {\"type\":\"response.created\"}\n\n" + "data: [DONE]\n\n"
+	encoded := base64.RawURLEncoding.EncodeToString([]byte(report))
+	body := "data: {\"type\":\"response.created\",\"_cpa_model_identity\":\"" + encoded + "\"}\n\n" +
+		"data: [DONE]\n\n"
 	resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body))}
 	info := &relaycommon.RelayInfo{StartTime: time.Now()}
 

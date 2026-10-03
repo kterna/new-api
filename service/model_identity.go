@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"unicode"
@@ -13,6 +14,7 @@ import (
 const (
 	cpaModelIdentityHeader  = "X-Cpa-Model-Identity"
 	cpaModelIdentityComment = ": cpa-model-identity "
+	cpaModelIdentityField   = "_cpa_model_identity"
 	cpaModelIdentityKey     = "cpa_model_identity"
 	maxIdentityLength       = 2048
 )
@@ -44,6 +46,32 @@ func CaptureCPAModelIdentityComment(c *gin.Context, line string) bool {
 	}
 	captureCPAModelIdentity(c, strings.TrimSpace(strings.TrimPrefix(line, cpaModelIdentityComment)))
 	return true
+}
+
+// CaptureCPAModelIdentityData extracts the observer's extension from a streamed
+// JSON event before the event is forwarded to the client.
+func CaptureCPAModelIdentityData(c *gin.Context, data string) string {
+	if !strings.Contains(data, cpaModelIdentityField) {
+		return data
+	}
+	var event map[string]json.RawMessage
+	if common.Unmarshal([]byte(data), &event) != nil {
+		return data
+	}
+	raw, found := event[cpaModelIdentityField]
+	if !found {
+		return data
+	}
+	delete(event, cpaModelIdentityField)
+	var encoded string
+	if common.Unmarshal(raw, &encoded) == nil {
+		captureCPAModelIdentity(c, encoded)
+	}
+	cleaned, err := common.Marshal(event)
+	if err != nil {
+		return data
+	}
+	return string(cleaned)
 }
 
 func captureCPAModelIdentity(c *gin.Context, encoded string) {
