@@ -263,6 +263,7 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				continue
 			}
 			if !strings.HasPrefix(data, "[DONE]") {
+				data = service.CaptureUpstreamModelStreamData(c, data)
 				info.SetFirstResponseTime()
 				info.ReceivedResponseCount++
 

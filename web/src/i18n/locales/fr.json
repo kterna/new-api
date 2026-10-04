@@ -5248,6 +5248,10 @@
     "Zero retention": "Aucune rétention",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Actual Requested Model": "Modèle réellement demandé",
+    "Upstream Model": "Modèle en amont",
+    "Cache Hit Rate": "Taux de succès du cache",
+    "Cached tokens / input tokens": "Jetons mis en cache / jetons d'entrée"
   }
 }

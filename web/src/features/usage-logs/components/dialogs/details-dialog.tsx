@@ -499,6 +499,10 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const showAdminIp =
     !!props.log.ip && (showTiming || (props.isAdmin && isTopup))
   const adminInfo = other?.admin_info
+  const upstreamReportedModel = props.isAdmin
+    ? adminInfo?.upstream_reported_model ||
+      adminInfo?.cpa_model_identity?.upstream_reported_model
+    : undefined
   const topupAuditFields =
     isTopup && props.isAdmin && adminInfo
       ? ([
@@ -1044,19 +1048,37 @@ export function DetailsDialog(props: DetailsDialogProps) {
         )}
 
         {/* Model mapping */}
-        {other?.is_model_mapped && other?.upstream_model_name && (
-          <DetailSection label={t('Model Mapping')}>
+        {!upstreamReportedModel &&
+          other?.is_model_mapped &&
+          other?.upstream_model_name && (
+            <DetailSection label={t('Model Mapping')}>
+              <DetailRow
+                label={t('Request Model')}
+                value={props.log.model_name}
+                mono
+              />
+              <DetailRow
+                label={t('Actual Model')}
+                value={other.upstream_model_name}
+                mono
+              />
+            </DetailSection>
+          )}
+
+        {/* Request and response model names */}
+        {upstreamReportedModel && (
+          <>
             <DetailRow
               label={t('Request Model')}
               value={props.log.model_name}
               mono
             />
             <DetailRow
-              label={t('Actual Model')}
-              value={other.upstream_model_name}
+              label={t('Upstream Model')}
+              value={upstreamReportedModel}
               mono
             />
-          </DetailSection>
+          </>
         )}
 
         {/* Token breakdown (for consume/error types with token data) */}

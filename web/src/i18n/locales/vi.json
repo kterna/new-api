@@ -5248,6 +5248,10 @@
     "Zero retention": "Không lưu dữ liệu",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Actual Requested Model": "Mô hình thực sự được yêu cầu",
+    "Upstream Model": "Mô hình thượng nguồn",
+    "Cache Hit Rate": "Tỷ lệ trúng bộ nhớ đệm",
+    "Cached tokens / input tokens": "Token được đệm ÷ token đầu vào"
   }
 }

@@ -36,12 +36,29 @@ export function safeDivide(
  * Calculate aggregated statistics from quota data
  */
 export function calculateDashboardStats(data: QuotaDataItem[]) {
-  return data.reduce(
+  const totals = data.reduce(
     (acc, item) => ({
       totalQuota: acc.totalQuota + (Number(item.quota) || 0),
       totalCount: acc.totalCount + (Number(item.count) || 0),
       totalTokens: acc.totalTokens + (Number(item.token_used) || 0),
+      totalPromptTokens:
+        acc.totalPromptTokens + (Number(item.prompt_tokens) || 0),
+      totalCachedTokens:
+        acc.totalCachedTokens + (Number(item.cached_tokens) || 0),
     }),
-    { totalQuota: 0, totalCount: 0, totalTokens: 0 }
+    {
+      totalQuota: 0,
+      totalCount: 0,
+      totalTokens: 0,
+      totalPromptTokens: 0,
+      totalCachedTokens: 0,
+    }
   )
+  // 缓存命中率 = 命中缓存的输入 token / 输入 token 总数（含缓存）
+  const cacheHitRate = safeDivide(
+    totals.totalCachedTokens,
+    totals.totalPromptTokens,
+    4
+  )
+  return { ...totals, cacheHitRate }
 }

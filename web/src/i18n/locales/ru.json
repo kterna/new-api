@@ -5248,6 +5248,10 @@
     "Zero retention": "Без хранения данных",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Actual Requested Model": "Фактически запрошенная модель",
+    "Upstream Model": "Модель вышестоящего сервиса",
+    "Cache Hit Rate": "Доля попаданий в кэш",
+    "Cached tokens / input tokens": "Токены кэша ÷ входные токены"
   }
 }

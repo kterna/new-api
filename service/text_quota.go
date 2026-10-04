@@ -523,9 +523,22 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 
 	attachQuotaSaturation(ctx, relayInfo, other)
 
+	// 数据看板缓存命中率分母：归一化后的输入 token 总数。
+	// OpenAI/Gemini 语义下 PromptTokens 已包含缓存 token；Claude 语义的 input_tokens
+	// 不包含缓存读取/缓存创建，需要补上。
+	inputTokens := summary.PromptTokens
+	if summary.IsClaudeUsageSemantic {
+		if billingUsage != nil && billingUsage.InputTokens > 0 {
+			inputTokens = billingUsage.InputTokens
+		} else {
+			inputTokens += summary.CacheTokens + summary.CacheCreationTokens
+		}
+	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     summary.PromptTokens,
+		InputTokens:      inputTokens,
+		CachedTokens:     summary.CacheTokens,
 		CompletionTokens: summary.CompletionTokens,
 		ModelName:        logModel,
 		TokenName:        summary.TokenName,

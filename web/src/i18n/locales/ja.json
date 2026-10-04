@@ -5248,6 +5248,10 @@
     "Zero retention": "データ保持なし",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Actual Requested Model": "実際のリクエストモデル",
+    "Upstream Model": "上流モデル",
+    "Cache Hit Rate": "キャッシュヒット率",
+    "Cached tokens / input tokens": "キャッシュ済みトークン ÷ 入力トークン"
   }
 }
