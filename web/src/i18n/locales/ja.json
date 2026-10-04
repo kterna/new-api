@@ -5249,9 +5249,9 @@
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
     "Zoom": "ズーム",
-    "CPA Model Observation": "CPA モデル観測",
     "Actual Requested Model": "実際のリクエストモデル",
     "Upstream Model": "上流モデル",
-    "Demo data": "デモデータ"
+    "Cache Hit Rate": "キャッシュヒット率",
+    "Cached tokens / input tokens": "キャッシュ済みトークン ÷ 入力トークン"
   }
 }

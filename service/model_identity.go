@@ -1,8 +1,8 @@
 package service
 
 import (
-	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"unicode"
@@ -12,108 +12,136 @@ import (
 )
 
 const (
-	cpaModelIdentityHeader  = "X-Cpa-Model-Identity"
-	cpaModelIdentityComment = ": cpa-model-identity "
-	cpaModelIdentityField   = "_cpa_model_identity"
-	cpaModelIdentityKey     = "cpa_model_identity"
-	maxIdentityLength       = 2048
+	upstreamModelHeader      = "X-Upstream-Reported-Model"
+	upstreamModelStreamField = "_upstream_reported_model"
+	upstreamModelContextKey  = "upstream_reported_model"
+	maxModelNameLength       = 256
+	maxObservedBodyLength    = 1024 * 1024
 )
 
-// CPAModelIdentity records what an upstream reported. A different identifier
-// may be an intentional alias, so this must not affect routing or billing.
-type CPAModelIdentity struct {
-	RequestedModel string `json:"requested_model"`
-	RoutedModel    string `json:"routed_model,omitempty"`
-	ReportedModel  string `json:"reported_model"`
-	Comparison     string `json:"comparison"`
-	Source         string `json:"source"`
-	ResponseID     string `json:"response_id,omitempty"`
+type modelObservation struct {
+	model    string
+	priority int
 }
 
-func CaptureCPAModelIdentityHeader(c *gin.Context, headers http.Header) {
-	if c == nil || headers == nil {
+// A response adapter can report the raw upstream model through the generic
+// header. Otherwise New API observes the standard model field in JSON bodies.
+func ObserveUpstreamModelResponse(c *gin.Context, resp *http.Response, isStream bool) {
+	if c == nil || resp == nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return
 	}
-	captureCPAModelIdentity(c, headers.Get(cpaModelIdentityHeader))
-}
-
-// CaptureCPAModelIdentityComment consumes the plugin's SSE comment. It returns
-// true for malformed observations too, so these internal comments never reach
-// a client as model output.
-func CaptureCPAModelIdentityComment(c *gin.Context, line string) bool {
-	if !strings.HasPrefix(line, cpaModelIdentityComment) {
-		return false
+	if model := resp.Header.Get(upstreamModelHeader); model != "" {
+		setUpstreamModel(c, model, 2)
+		resp.Header.Del(upstreamModelHeader)
 	}
-	captureCPAModelIdentity(c, strings.TrimSpace(strings.TrimPrefix(line, cpaModelIdentityComment)))
-	return true
+	if isStream || resp.Body == nil || !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "json") {
+		return
+	}
+	resp.Body = &modelObservingBody{ReadCloser: resp.Body, ctx: c}
 }
 
-// CaptureCPAModelIdentityData extracts the observer's extension from a streamed
-// JSON event before the event is forwarded to the client.
-func CaptureCPAModelIdentityData(c *gin.Context, data string) string {
-	if !strings.Contains(data, cpaModelIdentityField) {
+type modelObservingBody struct {
+	io.ReadCloser
+	ctx      *gin.Context
+	contents []byte
+	overflow bool
+}
+
+func (body *modelObservingBody) Read(p []byte) (int, error) {
+	n, err := body.ReadCloser.Read(p)
+	if n > 0 && !body.overflow {
+		if len(body.contents)+n > maxObservedBodyLength {
+			body.contents = nil
+			body.overflow = true
+		} else {
+			body.contents = append(body.contents, p[:n]...)
+		}
+	}
+	if err == io.EOF && !body.overflow {
+		captureStandardModel(body.ctx, body.contents)
+		body.contents = nil
+	}
+	return n, err
+}
+
+// CaptureUpstreamModelStreamData reads standard Chat, Responses, Claude, and
+// Gemini model fields. A converter may additionally preserve a model that its
+// normalized response would otherwise lose in the private extension field.
+func CaptureUpstreamModelStreamData(c *gin.Context, data string) string {
+	if c == nil || !strings.Contains(data, "model") {
 		return data
 	}
 	var event map[string]json.RawMessage
 	if common.Unmarshal([]byte(data), &event) != nil {
 		return data
 	}
-	raw, found := event[cpaModelIdentityField]
-	if !found {
-		return data
+	if raw, found := event[upstreamModelStreamField]; found {
+		delete(event, upstreamModelStreamField)
+		var model string
+		if common.Unmarshal(raw, &model) == nil {
+			setUpstreamModel(c, model, 2)
+		}
+		cleaned, err := common.Marshal(event)
+		if err == nil {
+			data = string(cleaned)
+		}
 	}
-	delete(event, cpaModelIdentityField)
-	var encoded string
-	if common.Unmarshal(raw, &encoded) == nil {
-		captureCPAModelIdentity(c, encoded)
+	if _, found := UpstreamReportedModel(c); !found {
+		captureStandardModel(c, []byte(data))
 	}
-	cleaned, err := common.Marshal(event)
-	if err != nil {
-		return data
-	}
-	return string(cleaned)
+	return data
 }
 
-func captureCPAModelIdentity(c *gin.Context, encoded string) {
-	if c == nil || encoded == "" || len(encoded) > maxIdentityLength {
+func captureStandardModel(c *gin.Context, data []byte) {
+	var value struct {
+		Model        string `json:"model"`
+		ModelVersion string `json:"modelVersion"`
+		Response     struct {
+			Model        string `json:"model"`
+			ModelVersion string `json:"modelVersion"`
+		} `json:"response"`
+		Message struct {
+			Model string `json:"model"`
+		} `json:"message"`
+	}
+	if common.Unmarshal(data, &value) != nil {
 		return
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(encoded)
-	if err != nil || len(raw) > maxIdentityLength {
-		return
+	for _, model := range []string{
+		value.Response.ModelVersion,
+		value.ModelVersion,
+		value.Response.Model,
+		value.Message.Model,
+		value.Model,
+	} {
+		if model != "" {
+			setUpstreamModel(c, model, 1)
+			return
+		}
 	}
-	var identity CPAModelIdentity
-	if common.Unmarshal(raw, &identity) != nil ||
-		!validIdentityValue(identity.RequestedModel, 256) ||
-		!validIdentityValue(identity.RoutedModel, 256) ||
-		!validIdentityValue(identity.ReportedModel, 256) ||
-		!validIdentityValue(identity.Source, 64) ||
-		!validIdentityValue(identity.ResponseID, 256) ||
-		identity.ReportedModel == "" {
-		return
-	}
-	identity.Comparison = "different"
-	if strings.EqualFold(identity.RequestedModel, identity.ReportedModel) {
-		identity.Comparison = "same"
-	}
-	c.Set(cpaModelIdentityKey, identity)
 }
 
-func validIdentityValue(value string, maxLength int) bool {
-	if len(value) > maxLength {
-		return false
+func setUpstreamModel(c *gin.Context, model string, priority int) {
+	model = strings.TrimSpace(model)
+	if model == "" || len(model) > maxModelNameLength || strings.IndexFunc(model, unicode.IsControl) >= 0 {
+		return
 	}
-	return strings.IndexFunc(value, unicode.IsControl) < 0
+	if previous, found := c.Get(upstreamModelContextKey); found {
+		if observation, ok := previous.(modelObservation); ok && observation.priority >= priority {
+			return
+		}
+	}
+	c.Set(upstreamModelContextKey, modelObservation{model: model, priority: priority})
 }
 
-func cpaModelIdentity(c *gin.Context) (CPAModelIdentity, bool) {
+func UpstreamReportedModel(c *gin.Context) (string, bool) {
 	if c == nil {
-		return CPAModelIdentity{}, false
+		return "", false
 	}
-	value, found := c.Get(cpaModelIdentityKey)
+	value, found := c.Get(upstreamModelContextKey)
 	if !found {
-		return CPAModelIdentity{}, false
+		return "", false
 	}
-	identity, ok := value.(CPAModelIdentity)
-	return identity, ok
+	observation, ok := value.(modelObservation)
+	return observation.model, ok
 }

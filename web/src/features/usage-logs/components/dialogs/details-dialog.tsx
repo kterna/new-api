@@ -499,8 +499,9 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const showAdminIp =
     !!props.log.ip && (showTiming || (props.isAdmin && isTopup))
   const adminInfo = other?.admin_info
-  const modelIdentity = props.isAdmin
-    ? adminInfo?.cpa_model_identity
+  const upstreamReportedModel = props.isAdmin
+    ? adminInfo?.upstream_reported_model ||
+      adminInfo?.cpa_model_identity?.upstream_reported_model
     : undefined
   const topupAuditFields =
     isTopup && props.isAdmin && adminInfo
@@ -1047,43 +1048,37 @@ export function DetailsDialog(props: DetailsDialogProps) {
         )}
 
         {/* Model mapping */}
-        {other?.is_model_mapped && other?.upstream_model_name && (
-          <DetailSection label={t('Model Mapping')}>
+        {!upstreamReportedModel &&
+          other?.is_model_mapped &&
+          other?.upstream_model_name && (
+            <DetailSection label={t('Model Mapping')}>
+              <DetailRow
+                label={t('Request Model')}
+                value={props.log.model_name}
+                mono
+              />
+              <DetailRow
+                label={t('Actual Model')}
+                value={other.upstream_model_name}
+                mono
+              />
+            </DetailSection>
+          )}
+
+        {/* Request and response model names */}
+        {upstreamReportedModel && (
+          <>
             <DetailRow
               label={t('Request Model')}
               value={props.log.model_name}
               mono
             />
             <DetailRow
-              label={t('Actual Model')}
-              value={other.upstream_model_name}
-              mono
-            />
-          </DetailSection>
-        )}
-
-        {/* Upstream-reported model identity from the CPA observer */}
-        {modelIdentity && (
-          <DetailSection
-            label={
-              modelIdentity.source === 'demo'
-                ? `${t('CPA Model Observation')} · ${t('Demo data')}`
-                : t('CPA Model Observation')
-            }
-          >
-            <DetailRow
-              label={t('Request Model')}
-              value={
-                modelIdentity.newapi_requested_model || props.log.model_name
-              }
-              mono
-            />
-            <DetailRow
               label={t('Upstream Model')}
-              value={modelIdentity.upstream_reported_model || ''}
+              value={upstreamReportedModel}
               mono
             />
-          </DetailSection>
+          </>
         )}
 
         {/* Token breakdown (for consume/error types with token data) */}

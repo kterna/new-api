@@ -45,7 +45,7 @@ const log = usageLogSchema.parse({
   model_name: 'gpt-6-astra',
   other: JSON.stringify({
     admin_info: {
-      cpa_model_identity: { upstream_reported_model: 'gpt-6-luna' },
+      upstream_reported_model: 'gpt-6-luna',
     },
   }),
 })
@@ -88,12 +88,27 @@ describe('usage log model observation', () => {
   test('keeps a single model line when the upstream reports the requested name', () => {
     const matchingOther = JSON.stringify({
       admin_info: {
-        cpa_model_identity: { upstream_reported_model: 'gpt-6-astra' },
+        upstream_reported_model: 'gpt-6-astra',
       },
     })
     const { window, container } = renderModelCell(true, matchingOther)
 
     assert.equal(container.querySelector('[role="note"]'), null)
+    window.close()
+  })
+
+  test('still shows the response model recorded by older logs', () => {
+    const oldOther = JSON.stringify({
+      admin_info: {
+        cpa_model_identity: { upstream_reported_model: 'gpt-6-luna' },
+      },
+    })
+    const { window, container } = renderModelCell(true, oldOther)
+
+    assert.match(
+      container.querySelector('[role="note"]')?.textContent ?? '',
+      /gpt-6-luna/
+    )
     window.close()
   })
 })

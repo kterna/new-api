@@ -5268,9 +5268,9 @@
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
     "Zoom": "Zoom",
-    "CPA Model Observation": "CPA Model Observation",
     "Actual Requested Model": "Actual Requested Model",
     "Upstream Model": "Upstream Model",
-    "Demo data": "Demo data"
+    "Cache Hit Rate": "Cache Hit Rate",
+    "Cached tokens / input tokens": "Cached tokens / input tokens"
   }
 }

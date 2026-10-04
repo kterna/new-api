@@ -31,6 +31,10 @@ export interface QuotaDataItem {
   token_used?: number
   count?: number
   quota?: number
+  /** 归一化后的输入 token 总数（含缓存），缓存命中率分母 */
+  prompt_tokens?: number
+  /** 命中缓存的输入 token 数 */
+  cached_tokens?: number
 }
 
 export interface FlowQuotaDataItem {
@@ -193,7 +197,7 @@ export interface DashboardFilters {
 
 export type ConsumptionDistributionChartType = 'bar' | 'area'
 
-export type ModelAnalyticsChartTab = 'trend' | 'proportion' | 'top'
+export type ModelAnalyticsChartTab = 'trend' | 'proportion' | 'top' | 'cacheHit'
 
 export interface DashboardChartPreferences {
   consumptionDistributionChart: ConsumptionDistributionChartType
@@ -242,6 +246,7 @@ export interface ProcessedChartData {
   spec_area: VChartSpec
   spec_model_line: VChartSpec
   spec_rank_bar: VChartSpec
+  spec_cache_hit: VChartSpec
   totalQuotaDisplay: string
   totalCountDisplay: string
 }

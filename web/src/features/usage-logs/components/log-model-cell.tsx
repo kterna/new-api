@@ -31,10 +31,10 @@ interface LogModelCellProps {
 export function LogModelCell({ log, isAdmin }: LogModelCellProps) {
   const { t } = useTranslation()
   const modelInfo = formatModelName(log)
-  const observedModel = isAdmin
-    ? parseLogOther(log.other)?.admin_info?.cpa_model_identity
-        ?.upstream_reported_model
-    : undefined
+  const adminInfo = isAdmin ? parseLogOther(log.other)?.admin_info : undefined
+  const observedModel =
+    adminInfo?.upstream_reported_model ||
+    adminInfo?.cpa_model_identity?.upstream_reported_model
 
   return (
     <div className='flex w-fit max-w-full flex-col gap-0.5'>

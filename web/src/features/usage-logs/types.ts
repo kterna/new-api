@@ -114,6 +114,7 @@ export interface ToolSurchargeItem {
 
 export interface LogOtherData {
   admin_info?: {
+    upstream_reported_model?: string
     cpa_model_identity?: {
       newapi_requested_model?: string
       cpa_requested_model?: string

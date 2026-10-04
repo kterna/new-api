@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,12 +15,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStreamScannerCapturesIdentityFieldWithoutForwardingIt(t *testing.T) {
+func TestStreamScannerCapturesGenericModelExtensionWithoutForwardingIt(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
-	report := `{"requested_model":"gemini-pro-agent","reported_model":"gemini-3.1-pro-high","source":"response.modelVersion"}`
-	encoded := base64.RawURLEncoding.EncodeToString([]byte(report))
-	body := "data: {\"type\":\"response.created\",\"_cpa_model_identity\":\"" + encoded + "\"}\n\n" +
+	body := "data: {\"type\":\"response.created\",\"response\":{\"model\":\"gemini-pro-agent\"},\"_upstream_reported_model\":\"gemini-3.1-pro-high\"}\n\n" +
 		"data: [DONE]\n\n"
 	resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body))}
 	info := &relaycommon.RelayInfo{StartTime: time.Now()}
@@ -31,11 +28,25 @@ func TestStreamScannerCapturesIdentityFieldWithoutForwardingIt(t *testing.T) {
 		received = append(received, data)
 	})
 
-	require.Equal(t, []string{`{"type":"response.created"}`}, received)
-	value, found := ctx.Get("cpa_model_identity")
+	require.Len(t, received, 1)
+	assert.NotContains(t, received[0], "_upstream_reported_model")
+	assert.Contains(t, received[0], "gemini-pro-agent")
+	model, found := service.UpstreamReportedModel(ctx)
 	require.True(t, found)
-	identity, ok := value.(service.CPAModelIdentity)
-	require.True(t, ok)
-	assert.Equal(t, "gemini-3.1-pro-high", identity.ReportedModel)
-	assert.Equal(t, "different", identity.Comparison)
+	assert.Equal(t, "gemini-3.1-pro-high", model)
+}
+
+func TestStreamScannerCapturesStandardModelWithoutPlugin(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	body := "data: {\"id\":\"chatcmpl-1\",\"model\":\"gpt-6-luna\",\"choices\":[]}\n\n" +
+		"data: [DONE]\n\n"
+	resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body))}
+	info := &relaycommon.RelayInfo{StartTime: time.Now()}
+
+	StreamScannerHandler(ctx, resp, info, func(data string, _ *StreamResult) {})
+
+	model, found := service.UpstreamReportedModel(ctx)
+	require.True(t, found)
+	assert.Equal(t, "gpt-6-luna", model)
 }

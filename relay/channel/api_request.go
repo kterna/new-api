@@ -533,7 +533,7 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	if upID := resp.Header.Get(common2.RequestIdKey); upID != "" {
 		c.Set(common2.UpstreamRequestIdKey, upID)
 	}
-	service.CaptureCPAModelIdentityHeader(c, resp.Header)
+	service.ObserveUpstreamModelResponse(c, resp, info.IsStream)
 
 	_ = req.Body.Close()
 	_ = c.Request.Body.Close()

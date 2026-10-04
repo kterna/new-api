@@ -251,9 +251,6 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			data := scanner.Text()
 			logger.LogDebug(c, "stream scanner data: %s", data)
 
-			if service.CaptureCPAModelIdentityComment(c, data) {
-				continue
-			}
 			if len(data) < 6 {
 				continue
 			}
@@ -266,7 +263,7 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				continue
 			}
 			if !strings.HasPrefix(data, "[DONE]") {
-				data = service.CaptureCPAModelIdentityData(c, data)
+				data = service.CaptureUpstreamModelStreamData(c, data)
 				info.SetFirstResponseTime()
 				info.ReceivedResponseCount++
 

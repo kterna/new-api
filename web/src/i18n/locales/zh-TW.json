@@ -5249,9 +5249,9 @@
     "Zhipu": "智譜",
     "Zhipu V4": "智譜 V4",
     "Zoom": "縮放",
-    "CPA Model Observation": "CPA 模型觀測",
     "Actual Requested Model": "實際請求模型",
     "Upstream Model": "上游模型",
-    "Demo data": "示範資料"
+    "Cache Hit Rate": "快取命中率",
+    "Cached tokens / input tokens": "快取 token ÷ 輸入 token"
   }
 }

@@ -326,8 +326,11 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 }
 
 type RecordConsumeLogParams struct {
-	ChannelId        int                    `json:"channel_id"`
-	PromptTokens     int                    `json:"prompt_tokens"`
+	ChannelId    int `json:"channel_id"`
+	PromptTokens int `json:"prompt_tokens"`
+	// InputTokens 归一化后的输入 token 总数（含缓存）；为 0 时数据看板以 PromptTokens 为分母
+	InputTokens      int                    `json:"input_tokens"`
+	CachedTokens     int                    `json:"cached_tokens"`
 	CompletionTokens int                    `json:"completion_tokens"`
 	ModelName        string                 `json:"model_name"`
 	TokenName        string                 `json:"token_name"`
@@ -388,17 +391,23 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		logger.LogError(c, "failed to record log: "+err.Error())
 	}
 	if common.DataExportEnabled {
+		inputTokens := params.InputTokens
+		if inputTokens <= 0 {
+			inputTokens = params.PromptTokens
+		}
 		LogQuotaData(QuotaDataLogParams{
-			UserID:    userId,
-			Username:  username,
-			ModelName: params.ModelName,
-			Quota:     params.Quota,
-			CreatedAt: createdAt,
-			TokenUsed: params.PromptTokens + params.CompletionTokens,
-			UseGroup:  params.Group,
-			TokenID:   params.TokenId,
-			ChannelID: params.ChannelId,
-			NodeName:  common.NodeName,
+			UserID:       userId,
+			Username:     username,
+			ModelName:    params.ModelName,
+			Quota:        params.Quota,
+			CreatedAt:    createdAt,
+			TokenUsed:    params.PromptTokens + params.CompletionTokens,
+			PromptTokens: inputTokens,
+			CachedTokens: params.CachedTokens,
+			UseGroup:     params.Group,
+			TokenID:      params.TokenId,
+			ChannelID:    params.ChannelId,
+			NodeName:     common.NodeName,
 		})
 	}
 }
