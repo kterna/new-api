@@ -5250,12 +5250,8 @@
     "Zhipu V4": "Zhipu V 4",
     "Zoom": "ズーム",
     "CPA Model Observation": "CPA モデル観測",
-    "CPA Routed Model": "CPA ルーティングモデル",
-    "Upstream Reported Model": "上流が報告したモデル",
-    "Comparison": "比較",
-    "Reported model differs": "報告されたモデルが異なります",
-    "Reported model matches": "報告されたモデルが一致します",
-    "Upstream model IDs may be aliases; check routing before treating a difference as fallback.": "上流のモデル ID は別名の可能性があります。差異をフォールバックと判断する前にルーティングを確認してください。",
-    "The reported model in this row is a temporary demo value.": "この行の報告モデルは一時的なデモ値です。"
+    "Actual Requested Model": "実際のリクエストモデル",
+    "Upstream Model": "上流モデル",
+    "Demo data": "デモデータ"
   }
 }

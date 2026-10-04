@@ -43,7 +43,6 @@ import { cn } from '@/lib/utils'
 import { LOG_TYPE_ALL_VALUE } from '../../constants'
 import type { UsageLog } from '../../data/schema'
 import {
-  formatModelName,
   getTieredBillingSummary,
   hasAnyCacheTokens,
   parseLogOther,
@@ -59,7 +58,7 @@ import {
 import type { LogOtherData } from '../../types'
 import { DetailsDialog } from '../dialogs/details-dialog'
 import { LogCostDisplay } from '../log-cost-display'
-import { ModelBadge } from '../model-badge'
+import { LogModelCell } from '../log-model-cell'
 import { TimingMetricsCell, StreamTpsCell } from '../timing-metrics-cell'
 import { useUsageLogsContext } from '../usage-logs-provider'
 
@@ -605,16 +604,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const log = row.original
         if (!isDisplayableLogType(log.type)) return null
 
-        const modelInfo = formatModelName(log)
-
-        return (
-          <div className='flex w-fit flex-col gap-0.5'>
-            <ModelBadge
-              modelName={modelInfo.name}
-              actualModel={modelInfo.actualModel}
-            />
-          </div>
-        )
+        return <LogModelCell log={log} isAdmin={isAdmin} />
       },
       meta: { mobileTitle: true },
     },

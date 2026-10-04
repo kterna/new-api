@@ -499,7 +499,9 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const showAdminIp =
     !!props.log.ip && (showTiming || (props.isAdmin && isTopup))
   const adminInfo = other?.admin_info
-  const modelIdentity = props.isAdmin ? adminInfo?.cpa_model_identity : undefined
+  const modelIdentity = props.isAdmin
+    ? adminInfo?.cpa_model_identity
+    : undefined
   const topupAuditFields =
     isTopup && props.isAdmin && adminInfo
       ? ([
@@ -1062,7 +1064,13 @@ export function DetailsDialog(props: DetailsDialogProps) {
 
         {/* Upstream-reported model identity from the CPA observer */}
         {modelIdentity && (
-          <DetailSection label={t('CPA Model Observation')}>
+          <DetailSection
+            label={
+              modelIdentity.source === 'demo'
+                ? `${t('CPA Model Observation')} · ${t('Demo data')}`
+                : t('CPA Model Observation')
+            }
+          >
             <DetailRow
               label={t('Request Model')}
               value={
@@ -1070,45 +1078,11 @@ export function DetailsDialog(props: DetailsDialogProps) {
               }
               mono
             />
-            {modelIdentity.cpa_routed_model && (
-              <DetailRow
-                label={t('CPA Routed Model')}
-                value={modelIdentity.cpa_routed_model}
-                mono
-              />
-            )}
             <DetailRow
-              label={t('Upstream Reported Model')}
+              label={t('Upstream Model')}
               value={modelIdentity.upstream_reported_model || ''}
               mono
             />
-            <DetailRow
-              label={t('Comparison')}
-              value={
-                <StatusBadge
-                  label={
-                    modelIdentity.comparison === 'different'
-                      ? t('Reported model differs')
-                      : t('Reported model matches')
-                  }
-                  variant={
-                    modelIdentity.comparison === 'different' ? 'orange' : 'green'
-                  }
-                  size='sm'
-                  copyable={false}
-                />
-              }
-            />
-            <p className='text-muted-foreground text-xs'>
-              {t(
-                'Upstream model IDs may be aliases; check routing before treating a difference as fallback.'
-              )}
-            </p>
-            {modelIdentity.source === 'demo' && (
-              <p className='text-info text-xs'>
-                {t('The reported model in this row is a temporary demo value.')}
-              </p>
-            )}
           </DetailSection>
         )}
 

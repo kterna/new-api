@@ -5250,12 +5250,8 @@
     "Zhipu V4": "智譜 V4",
     "Zoom": "縮放",
     "CPA Model Observation": "CPA 模型觀測",
-    "CPA Routed Model": "CPA 路由模型",
-    "Upstream Reported Model": "上游回報模型",
-    "Comparison": "比較結果",
-    "Reported model differs": "回報模型名稱不同",
-    "Reported model matches": "回報模型名稱相同",
-    "Upstream model IDs may be aliases; check routing before treating a difference as fallback.": "上游模型名稱可能是別名；名稱不同需結合路由判斷。",
-    "The reported model in this row is a temporary demo value.": "此列的上游回報模型是臨時示範值。"
+    "Actual Requested Model": "實際請求模型",
+    "Upstream Model": "上游模型",
+    "Demo data": "示範資料"
   }
 }
